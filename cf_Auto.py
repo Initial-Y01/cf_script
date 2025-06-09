@@ -41,7 +41,7 @@ class CFAotuGUI(tk.Tk):
         self.emergency_enabled = tk.BooleanVar(value=True)
         self.idle_threshold_minutes = tk.StringVar(value="15")
         self.log_enabled = tk.BooleanVar(value=True)
-        self.f11_enabled = tk.BooleanVar(value=True)  # 新增功能开关
+        self.f11_enabled = tk.BooleanVar(value=True)
 
         os.makedirs(TEMPLATE_DIR, exist_ok=True)
         os.makedirs(F11_TEMPLATE_DIR, exist_ok=True)
@@ -219,11 +219,12 @@ class CFAotuGUI(tk.Tk):
             self.worker_thread.join(timeout=2)
         self.log_message('挂机停止')
 
-    def _loop(self):
+    def _loop(self):    #识别匹配点击
         while self.running:
             screenshot = pyautogui.screenshot()
             screen = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2GRAY)
             found = False
+            matched_targets = []
             for path, tpl in self.templates.items():
                 res = cv2.matchTemplate(screen, tpl, cv2.TM_CCOEFF_NORMED)
                 _, max_val, _, max_loc = cv2.minMaxLoc(res)
@@ -231,27 +232,28 @@ class CFAotuGUI(tk.Tk):
                     th, tw = tpl.shape
                     x = max_loc[0] + tw // 2
                     y = max_loc[1] + th // 2
-                    self.click_at(x, y)
-                    self.last_action_time = time.time()
-                    self.log_message(f"点击 {os.path.basename(path)} @({x},{y}) conf={max_val:.2f}")
-                    found = True
-                    time.sleep(0.5)
-                    break
+                    matched_targets.append((path, x, y, max_val))
 
-            if self.f11_enabled.get():  # 检查是否启用 F11 检测
+            matched_targets.sort(key=lambda x: x[0])
+
+            for path, x, y, conf in matched_targets:
+                self.click_at(x, y)
+                self.last_action_time = time.time()
+                self.log_message(f"点击 {os.path.basename(path)} @({x},{y}) conf={conf:.2f}")
+                time.sleep(0.5)
+                found = True
+
+            if self.f11_enabled.get():        # 检查是否启用 F11 检测
                 for path, tpl in self.f11_templates.items():
                     res = cv2.matchTemplate(screen, tpl, cv2.TM_CCOEFF_NORMED)
                     _, max_val, _, _ = cv2.minMaxLoc(res)
                     if max_val >= 0.85:
                         pyautogui.press('f11')
-                        # pyautogui.press('k')       #测试用的替换键
                         self.log_message(f"检测到t人: {os.path.basename(path)}，已按下F11")
                         break
 
-            if not found and self.emergency_enabled.get():   # 反挂机检测
+            if not found and self.emergency_enabled.get():    # 反挂机检测
                 if time.time() - self.last_action_time > self.idle_threshold:
-                    # pyautogui.hotkey('s', 'space')
-                    #游戏外是正常的，游戏内只执行了点击鼠标却没进行移动，但是t人用的F11是生效的，所以应该不是反作弊的屏蔽导致的，不知道什么原因。
                     pyautogui.mouseDown(button='left')
                     time.sleep(1)
                     pyautogui.mouseUp(button='left')
