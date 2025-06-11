@@ -181,19 +181,20 @@ class CFAotuGUI(tk.Tk):
             self.log_message('未安装 pynput，热键不可用')
 
     def click_at(self, x, y):
-        if win32api:
-            try:
+        try:
+            if win32api:
                 win32api.SetCursorPos((int(x), int(y)))
                 time.sleep(0.05)
-                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN,0,0,0,0)
+                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0)
                 time.sleep(0.05)
-                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP,0,0,0,0)
-                return
-            except Exception as e:
-                self.log_message(f"win32 点击失败，回退到 pyautogui: {e}")
-        pyautogui.moveTo(x, y)
-        time.sleep(0.1)
-        pyautogui.click()
+                win32api.mouse_event(win32con.MOUSEEVENTF_LEFTUP, 0, 0, 0, 0)
+            else:
+                pyautogui.moveTo(x, y)
+                pyautogui.mouseDown()
+                time.sleep(0.05)
+                pyautogui.mouseUp()
+        except Exception as e:
+            self.log_message(f"点击时发生错误: {e}")
 
     def start(self):
         if self.running:
@@ -257,6 +258,8 @@ class CFAotuGUI(tk.Tk):
                     pyautogui.mouseDown(button='left')
                     time.sleep(1)
                     pyautogui.mouseUp(button='left')
+                    # pyautogui.hotkey('s', 'space')
+                    # 游戏外是正常的，游戏内只执行了点击鼠标却没进行移动，但是t人用的F11是生效的，所以应该不是反作弊的屏蔽导致的，不知道什么原因。
                     self.last_action_time = time.time()
                     self.log_message("长时间未检测到模板，触发反挂机检测动作：执行挥刀")
             time.sleep(1.0)
