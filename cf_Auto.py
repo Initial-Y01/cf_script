@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from asyncio import subprocess
+import subprocess
 import threading
 import win32api
 import win32con
@@ -18,6 +18,7 @@ import ctypes
 # 全局热键库优先使用 pynput
 try:
     from pynput import keyboard as kb
+
 except ImportError:
     kb = None
     print("警告: 未找到 pynput 库，全局热键功能不可用。")
@@ -139,8 +140,6 @@ class CFAotuGUI(tk.Tk):
         self.shutdown_minutes = tk.StringVar(value="30")
         self.shutdown_timer = None
         self.shutdown_remaining = 0
-
-
 
         # 设置现代主题
         self._setup_theme()
